@@ -69,39 +69,52 @@ int main() {
     }
 
 
-    int counts[8] = {0};
-    double sum = 0.0;
-    
+      int count = 1000;
+    float temperatures[1000];
+
+    // Beispielwerte
+    for (int i = 0; i < count; i++) temperatures[i] = (i % 80) - 40; // Werte von -40 bis 39
+
+    int counts[8];
+    double sum;
+
     for (int iteration = 0; iteration < 1000; iteration++) {
         sum = 0.0;
         memset(counts, 0, sizeof(counts));
-        
-        #pragma omp parallel for reduction(+:sum)
-        // solange die Schleife läuft, wird die Variable sum von allen Threads gemeinsam genutzt,
-        // aber jeder Thread hat eine private Kopie davon. 
-        // Am Ende der Schleife werden die Werte aller privaten Kopien 
-        // von sum addiert und in die ursprüngliche Variable sum zurückgegeben.
-        for (int i = 0; i < count; i++) {
-            for (int n = 0; n < 8; n++) {
-                float lower = (n - 3) * 10;
-                float upper = lower + 10;
-                if (temperatures[i] >= lower && temperatures[i] < upper) {
-                    #pragma omp atomic
-                    // sorgt dafür, dass eine Speicherstelle (eine Variable) atomar aktualisiert wird, 
-                    // indem der Zugriff auf sie synchronisiert wird. Es schützt vor Race Conditions, 
-                    // bei denen mehrere Threads gleichzeitig lesen und schreiben, was zu fehlerhaften Werten führen würde
-                    counts[n]++;
+
+        #pragma omp parallel
+        {
+            int counts_private[8] = {0};  // Jeder Thread hat eigenes Zählarray
+            double sum_private = 0.0;
+
+            #pragma omp for
+            for (int i = 0; i < count; i++) {
+                sum_private += temperatures[i];
+                for (int n = 0; n < 8; n++) {
+                    float lower = (n - 3) * 10;
+                    float upper = lower + 10;
+                    if (temperatures[i] >= lower && temperatures[i] < upper) {
+                        counts_private[n]++;  // Thread-sicher, da privat
+                    }
+                }
+            }
+
+            // Zusammenführen in das globale Array
+            #pragma omp critical
+            {
+                sum += sum_private;
+                for (int n = 0; n < 8; n++) {
+                    counts[n] += counts_private[n];
+                }
             }
         }
-            sum += temperatures[i];
-        }
-        
-        
-        //  printf("Iteration %d: Sum=%.3f, Durchschnitt=%.3f\n", iteration + 1, sum, sum / count);
 
+        // Ausgabe
+        // printf("Iteration %d: Sum=%.3f, Durchschnitt=%.3f\n", iteration + 1, sum, sum / count);
         for (int n = 0; n < 8; n++) {
-        printf("Iteration %d: Anzahl Werte im Bereich [%d, %d): %d\n", iteration + 1, (n - 3) * 10, (n - 2) * 10, counts[n]);
-    }
+            printf("Iteration %d: Anzahl Werte im Bereich [%d, %d): %d\n",
+                   iteration + 1, (n - 3) * 10, (n - 2) * 10, counts[n]);
+        }
     }
 
    
