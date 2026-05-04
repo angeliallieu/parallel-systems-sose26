@@ -68,15 +68,12 @@ int main() {
         return 1;
     }
 
-
-      int count = 1000;
-    float temperatures[1000];
-
-    // Beispielwerte
-    for (int i = 0; i < count; i++) temperatures[i] = (i % 80) - 40; // Werte von -40 bis 39
+    // Beispielwerte - Verwendung des geladenen Arrays
+    // Alternativ: Zum Testen mit Beispieldaten verwenden Sie den Code unten und kommentieren Sie den Dateilade-Code aus
+    // for (int i = 0; i < count; i++) temperatures[i] = (i % 80) - 40; // Werte von -40 bis 39
 
     int counts[8];
-    double sum;
+    double sum = 0.0;
 
     for (int iteration = 0; iteration < 1000; iteration++) {
         sum = 0.0;
